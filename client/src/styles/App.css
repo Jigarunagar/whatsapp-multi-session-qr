@@ -422,12 +422,14 @@ body {
   font-size: 14px;
 }
 
+
+
 .qr-area img {
-  max-width: 200px;
-  border: 15px solid white;
+  max-width: 210px;
+  /* border: 2px solid white; */
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  animation: pulse 2s infinite;
+  /* animation: pulse 2s infinite; */
 }
 
 @keyframes pulse {
@@ -436,23 +438,6 @@ body {
   100% { box-shadow: 0 10px 30px rgba(0, 168, 132, 0.3); }
 }
 
-.qr-area button {
-  margin-top: 20px;
-  background: linear-gradient(135deg, #00a884 0%, #00d394 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.qr-area button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 168, 132, 0.4);
-}
 
 /* Status Box */
 .status-box {
@@ -602,16 +587,16 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #8696a0;
+  /* color: #8696a0; */
 }
 
 .chat-default img {
-  width: 200px;
-  height: 200px;
+  width: 350px;
+  height: 350px;
   border-radius: 20px;
   margin-bottom: 20px;
-  opacity: 0.5;
-  filter: grayscale(1);
+  /* opacity: 1; */
+  /* filter: grayscale(15deg); */
 }
 
 .chat-default p {
