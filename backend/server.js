@@ -83,7 +83,9 @@ class UserSession {
                 name: myName,
                 number: myNumber
             }));
-            this.sendStatus("connected");
+            this.sendStatus(JSON.stringify({
+                type: "connected"
+            }));
             console.log(`Connected as: ${myName} (${myNumber}) for user: ${this.userId}`);
         });
 

@@ -53,10 +53,11 @@ const useWhatsApp = (activeUser) => {
           return;
         }
 
-        if (e.data === "connected") {
+        if (data.type === "connected") {
           setStatus("Connected");
-          setQr("");
+          setQr("");     
           loadContacts();
+          return;
         } else if (e.data === "qr") {
           setStatus("Disconnected");
           fetchQr();

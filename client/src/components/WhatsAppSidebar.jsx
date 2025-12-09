@@ -8,7 +8,7 @@ const WhatsAppSidebar = ({
   activeUser,
   userName,
   status,
-  qr,
+  qr,                  // 👈 अब इससे UI switch होगा
   contacts,
   selectedChat,
   setSelectedChat,
@@ -30,6 +30,11 @@ const WhatsAppSidebar = ({
     );
   }
 
+  // --------------------------------------------
+  // 🔥 FIX: QR empty = Connected → Show CONTACTS UI
+  // --------------------------------------------
+  const isConnected = qr === "" && status === "Connected";
+
   return (
     <div className="wa-sidebar">
       <div className="sidebar-profile">
@@ -43,7 +48,12 @@ const WhatsAppSidebar = ({
         </button>
       </div>
 
-      {status === "Connected" ? (
+      {/* -------------------------------------------
+         🔥 FIXED LOGIC:
+         If QR is EMPTY → Show Contacts
+         If QR exists → Show QR Code
+      ------------------------------------------- */}
+      {isConnected ? (
         <>
           <div className="search">
             <FiSearch className="search-icon" />
@@ -54,10 +64,12 @@ const WhatsAppSidebar = ({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
           <div className="contacts-header">
             <h4>Contacts</h4>
             <span className="contact-count">{contacts.length}</span>
           </div>
+
           <div className="contact-list">
             {contacts.map((contact, index) => (
               <ContactItem
@@ -79,22 +91,21 @@ const WhatsAppSidebar = ({
       ) : (
         <div className="qr-area">
           <p>Scan QR to connect {userName}</p>
-          {status === "Disconnected" && (
-            <QRCodeDisplay
-              qrCode={qr}
-              title={`Scan to connect ${userName}`}
-              showRefresh={true}
-              showDownload={true}
-              onRefresh={fetchQr}
-              isLoading={!qr}
-              size="medium"
-            />
-          )}
+
+          <QRCodeDisplay
+            qrCode={qr}
+            title={`Scan to connect ${userName}`}
+            showRefresh={true}
+            showDownload={true}
+            onRefresh={fetchQr}
+            isLoading={!qr}
+            size="medium"
+          />
         </div>
       )}
 
-      <div className={`status-box ${status === "Connected" ? "ok" : "not-ok"}`}>
-        <strong>Status:</strong> {status}
+      <div className={`status-box ${isConnected ? "ok" : "not-ok"}`}>
+        <strong>Status:</strong> {isConnected ? "Connected" : "Disconnected"}
       </div>
     </div>
   );
