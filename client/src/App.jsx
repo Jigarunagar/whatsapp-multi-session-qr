@@ -3,6 +3,10 @@ import HomePage from './Pages/HomePage'
 import { Toaster } from "react-hot-toast";
 const API = import.meta.env.VITE_API + "/api";
 
+// Example:
+axios.get(`${API}/get-sessions`);
+axios.post(`${API}/create-user`);
+
 function App() {
   return (
     <>
