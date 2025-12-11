@@ -24,5 +24,3 @@ dist-ssr
 *.sw?
 .wwebjs_auth
 .wwebjs_cache
-
-.vercel.json
