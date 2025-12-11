@@ -27,7 +27,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     const events = new EventSource(
-      `http://localhost:3000/api/user/status?userId=${activeUser.userId}`
+      `https://whatsapp-multi-session-qr.onrender.com/api/user/status?userId=${activeUser.userId}`
     );
 
     events.onmessage = (e) => {
@@ -55,7 +55,7 @@ const useWhatsApp = (activeUser) => {
 
         if (data.type === "connected") {
           setStatus("Connected");
-          setQr("");     
+          setQr("");
           loadContacts();
           return;
         } else if (e.data === "qr") {
@@ -113,8 +113,9 @@ const useWhatsApp = (activeUser) => {
 
     try {
       const res = await axios.get(
-        `http://localhost:3000/api/user/qr?userId=${activeUser.userId}`
+        `https://whatsapp-multi-session-qr.onrender.com/api/user/qr?userId=${activeUser.userId}`
       );
+
 
       const parser = new DOMParser();
       const htmlDoc = parser.parseFromString(res.data, "text/html");
@@ -131,9 +132,9 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      const response = await axios.get(
-        `http://localhost:3000/api/user/contacts`,
-        { headers: { "x-user-id": activeUser.userId } }
+      const response = await axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/contacts`, {
+        headers: { "x-user-id": activeUser.userId }
+      }
       );
 
       const cleanedContacts = response.data.contacts.map((c) => ({
@@ -163,7 +164,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       await axios.post(
-        `http://localhost:3000/api/user/send`,
+        `https://whatsapp-multi-session-qr.onrender.com/api/user/send`,
         formData,
         {
           headers: {
@@ -172,6 +173,7 @@ const useWhatsApp = (activeUser) => {
           }
         }
       );
+
 
       const cleanNumber = number.replace("@c.us", "").replace("@s.whatsapp.net", "");
 
@@ -222,7 +224,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      await axios.get(`http://localhost:3000/api/user/logout`, {
+      await axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/logout`, {
         headers: { "x-user-id": activeUser.userId }
       });
 
