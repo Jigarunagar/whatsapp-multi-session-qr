@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API + "/api";
+const API_BASE = "https://whatsapp-multi-session-qr.onrender.com/api";
 
 export const api = {
   createUser: (userName) =>
