@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import HomePage from './Pages/HomePage'
 import { Toaster } from "react-hot-toast";
+import axios from 'axios';
 const API = import.meta.env.VITE_API + "/api";
 
 // Example:
