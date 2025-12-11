@@ -1,30 +1,32 @@
 import axios from "axios";
 
-// const API_BASE = "http://localhost:3000/api";
+const API = "https://whatsapp-multi-session-qr.onrender.com/api";
 
 export const api = {
-  // User management
   createUser: (userName) =>
-    axios.post(`https://whatsapp-multi-session-qr.onrender.com/api/user/create`, { userName }),
+    axios.post(`${API}/user/create`, { userName }),
 
   deleteUser: (userId) =>
-    axios.delete(`https://whatsapp-multi-session-qr.onrender.com/api/user/${userId}`),
+    axios.delete(`${API}/user/${userId}`),
 
   logoutUser: (userId) =>
-    axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/logout`, { headers: { 'x-user-id': userId } }),
+    axios.get(`${API}/user/logout`, {
+      headers: { "x-user-id": userId },
+    }),
 
-  // WhatsApp operations
   getQR: (userId) =>
-    axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/qr?userId=${userId}`),
+    axios.get(`${API}/user/qr?userId=${userId}`),
 
   getContacts: (userId) =>
-    axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/contacts`, { headers: { 'x-user-id': userId } }),
+    axios.get(`${API}/user/contacts`, {
+      headers: { "x-user-id": userId },
+    }),
 
   sendMessage: (userId, formData) =>
-    axios.post(`https://whatsapp-multi-session-qr.onrender.com/api/user/send`, formData, {
+    axios.post(`${API}/user/send`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
-        'x-user-id': userId
-      }
-    })
+        "x-user-id": userId,
+      },
+    }),
 };
