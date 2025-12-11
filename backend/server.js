@@ -6,7 +6,12 @@ const multer = require("multer");
 const fs = require("fs");
 const app = express();
 const upload = multer({ dest: "uploads/" });
-app.use(cors());
+const cors = require("cors");
+app.use(cors({
+    origin: "*",
+    methods: "GET,POST,DELETE,PUT",
+    allowedHeaders: "Content-Type, Authorization, x-user-id"
+}));
 app.use(express.json());
 const PORT = 3000;
 
