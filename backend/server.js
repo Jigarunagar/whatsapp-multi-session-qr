@@ -8,13 +8,11 @@ const app = express();
 const dotenv = require("dotenv")
 dotenv.config()
 const upload = multer({ dest: "uploads/" });
-app.use(
-    cors({
-        origin: "*",
-        methods: "GET,POST,PUT,DELETE",
-        allowedHeaders: "Content-Type, x-user-id",
-    })
-);
+app.use(cors({
+  origin: "*", 
+  methods: "GET,POST,DELETE,PUT",
+  allowedHeaders: "Content-Type, Authorization, x-user-id"
+}));
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
