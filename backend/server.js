@@ -9,9 +9,9 @@ const dotenv = require("dotenv")
 dotenv.config()
 const upload = multer({ dest: "uploads/" });
 app.use(cors({
-  origin: "*", 
-  methods: "GET,POST,DELETE,PUT",
-  allowedHeaders: "Content-Type, Authorization, x-user-id"
+    origin: "*",
+    methods: "GET,POST,DELETE,PUT",
+    allowedHeaders: "Content-Type, Authorization, x-user-id"
 }));
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
@@ -50,16 +50,16 @@ class UserSession {
             authStrategy: new LocalAuth({ clientId: this.userId }),
             puppeteer: {
                 headless: true,
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
                 args: [
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
-                    "--no-first-run",
-                    "--no-zygote",
-                    "--single-process"
+                    "--disable-software-rasterizer",
+                    "--disable-extensions"
                 ]
-            },
+            }
         });
 
         this.client.on("qr", async (qr) => {
