@@ -27,7 +27,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     const events = new EventSource(
-      `https://whatsapp-multi-session-qr.onrender.com/api/user/status?userId=${activeUser.userId}`
+      `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/status?userId=${activeUser.userId}`
     );
 
     events.onmessage = (e) => {
@@ -113,7 +113,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       const res = await axios.get(
-        `https://whatsapp-multi-session-qr.onrender.com/api/user/qr?userId=${activeUser.userId}`
+        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/qr?userId=${activeUser.userId}`
       );
 
 
@@ -132,7 +132,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      const response = await axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/contacts`, {
+      const response = await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/contacts`, {
         headers: { "x-user-id": activeUser.userId }
       }
       );
@@ -164,7 +164,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       await axios.post(
-        `https://whatsapp-multi-session-qr.onrender.com/api/user/send`,
+        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/send`,
         formData,
         {
           headers: {
@@ -224,7 +224,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      await axios.get(`https://whatsapp-multi-session-qr.onrender.com/api/user/logout`, {
+      await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/logout`, {
         headers: { "x-user-id": activeUser.userId }
       });
 
