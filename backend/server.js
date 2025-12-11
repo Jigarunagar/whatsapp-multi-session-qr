@@ -4,14 +4,15 @@ const qrcode = require("qrcode");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
-const dotenv = require("dotenv")
 const app = express();
+const dotenv = require("dotenv")
+dotenv.config()
 const upload = multer({ dest: "uploads/" });
 app.use(cors({
-  origin: "https://whatsapp-multi-session-qr.vercel.app",
-  credentials: true,
+  origin: "*", 
+  methods: "GET,POST,DELETE,PUT",
+  allowedHeaders: "Content-Type, Authorization, x-user-id"
 }));
-dotenv.config()
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
