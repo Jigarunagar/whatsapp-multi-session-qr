@@ -1,0 +1,25 @@
+# Render service definitions (basic). Verify disk/mount syntax in Render docs before applying.
+services:
+  - name: whatsapp-backend
+    type: web
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    plan: starter
+    instanceCount: 1
+    # Persistent disk for LocalAuth session storage
+    disk:
+      sizeGB: 10
+      mountPath: /sessions
+    envVars:
+      WWEBJS_LOCAL_AUTH_DIR: /sessions
+      NODE_ENV: production
+
+  - name: whatsapp-frontend
+    type: static
+    env: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      # Replace with your backend service URL after deployment or set in Render dashboard
+      VITE_API_URL: "https://YOUR_BACKEND_URL"
