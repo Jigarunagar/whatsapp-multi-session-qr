@@ -35,7 +35,8 @@ function HomePage() {
     chatHistory,
     searchTerm,
     setSearchTerm,
-    userName,
+    // userName,
+    userNames,
     handleSend,
     logoutUser,
     fetchQr,
@@ -62,7 +63,7 @@ function HomePage() {
 
       <WhatsAppSidebar
         activeUser={activeUser}
-        userName={userName}
+        userName={userNames?.[activeUser?.userId]}
         status={status}
         qrMap={qrMap}
         qrLoadingUser={qrLoadingUser}
@@ -73,7 +74,6 @@ function HomePage() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         logoutUser={logoutUser}
-        fetchQr={fetchQr}
       />
 
       <ChatArea

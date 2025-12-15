@@ -42,7 +42,9 @@ const WhatsAppSidebar = ({
       <div className="sidebar-profile">
         <div className="profile-circle">{userName?.charAt(0) || 'U'}</div>
         <div className="profile-info">
-          <h4>{userName || activeUser.userName}</h4>
+          <h4>
+            {userName || activeUser.userName}
+          </h4>
           <small>{activeUser.userId}</small>
         </div>
         <button className="btn-logout" onClick={logoutUser} title="Logout">

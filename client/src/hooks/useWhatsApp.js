@@ -20,7 +20,9 @@ const useWhatsApp = (activeUser) => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [userName, setUserName] = useState("");
+  // const [userName, setUserName] = useState("");
+  const [userNames, setUserNames] = useState({});
+
 
   const messagesEndRef = useRef(null);
 
@@ -81,9 +83,18 @@ const useWhatsApp = (activeUser) => {
         if (data.type === "init") {
           if (data.status === "connected") {
             setStatus("Connected");
-            setUserName(data.userName || activeUser.userName);
-            setQr("");
+            // setUserName(data.userName || activeUser.userName);
+
+            // 🔥 FORCE contacts load
             loadContacts();
+
+            setQrMap(prev => {
+              const copy = { ...prev };
+              delete copy[activeUser.userId];
+              return copy;
+            });
+
+            removeQrFromLocal(activeUser.userId);
           } else if (data.status === "disconnected" && data.qrCode) {
             setQr(data.qrCode);
             setStatus("Disconnected");
@@ -111,7 +122,20 @@ const useWhatsApp = (activeUser) => {
           const msg = JSON.parse(e.data);
           if (msg.type === "user-info") {
             const updatedName = msg.name;
-            setUserName(updatedName);
+
+            setUserNames(prev => {
+              const updated = {
+                ...prev,
+                [activeUser.userId]: updatedName
+              };
+
+              localStorage.setItem(
+                "wa_user_names",
+                JSON.stringify(updated)
+              );
+
+              return updated;
+            });
           } else {
             saveIncomingMessage(msg);
           }
@@ -149,6 +173,24 @@ const useWhatsApp = (activeUser) => {
       }
     }
   }, [activeUser]);
+
+  useEffect(() => {
+    if (!activeUser) return;
+
+    // 🔥 RESET EVERYTHING ON USER SWITCH
+    setContacts([]);
+    setSelectedChat(null);
+    setNumber("");
+    setStatus("Disconnected");
+  }, [activeUser?.userId]);
+
+
+  useEffect(() => {
+    const savedNames = localStorage.getItem("wa_user_names");
+    if (savedNames) {
+      setUserNames(JSON.parse(savedNames));
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -325,7 +367,8 @@ const useWhatsApp = (activeUser) => {
     chatHistory,
     searchTerm,
     setSearchTerm,
-    userName,
+    // userName,
+    userNames,
     handleSend,
     logoutUser,
     fetchQr,
