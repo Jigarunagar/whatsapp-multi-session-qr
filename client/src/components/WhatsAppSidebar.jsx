@@ -8,7 +8,8 @@ const WhatsAppSidebar = ({
   activeUser,
   userName,
   status,
-  qr,                  // 👈 अब इससे UI switch होगा
+  qrMap,
+  qrLoadingUser,
   contacts,
   selectedChat,
   setSelectedChat,
@@ -30,10 +31,11 @@ const WhatsAppSidebar = ({
     );
   }
 
-  // --------------------------------------------
-  // 🔥 FIX: QR empty = Connected → Show CONTACTS UI
-  // --------------------------------------------
-  const isConnected = qr === "" && status === "Connected";
+
+  const userQr = qrMap?.[activeUser.userId];
+  const isGenerating = qrLoadingUser === activeUser.userId;
+  const isConnected = status === "Connected" && !userQr;
+
 
   return (
     <div className="wa-sidebar">
@@ -90,17 +92,8 @@ const WhatsAppSidebar = ({
         </>
       ) : (
         <div className="qr-area">
-          <p>Scan QR to connect {userName}</p>
-
-          <QRCodeDisplay
-            qrCode={qr}
-            title={`Scan to connect ${userName}`}
-            showRefresh={true}
-            showDownload={true}
-            onRefresh={fetchQr}
-            isLoading={!qr}
-            size="medium"
-          />
+          {isGenerating && <p>🔄 QR code generating...</p>}
+          {userQr && <QRCodeDisplay qrCode={userQr} title={`Scan QR for ${userName}`} />}
         </div>
       )}
 

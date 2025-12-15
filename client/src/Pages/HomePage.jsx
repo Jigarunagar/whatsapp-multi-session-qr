@@ -6,7 +6,7 @@ import Modal from "../components/Modal";
 import useUserManagement from "../hooks/useUserManagement";
 import useWhatsApp from "../hooks/useWhatsApp";
 import "../styles/App.css";
- 
+
 
 function HomePage() {
   const {
@@ -20,7 +20,8 @@ function HomePage() {
   } = useUserManagement();
 
   const {
-    qr,
+    qrMap,
+    qrLoadingUser,
     status,
     number,
     setNumber,
@@ -50,7 +51,10 @@ function HomePage() {
       <UserSidebar
         users={users}
         activeUser={activeUser}
-        setActiveUser={setActiveUser}
+        setActiveUser={(user) => {
+          setActiveUser(user);
+          fetchQr();
+        }}
         deleteUser={deleteUser}
         fetchQr={fetchQr}
         openModal={() => setShowModal(true)}
@@ -60,7 +64,8 @@ function HomePage() {
         activeUser={activeUser}
         userName={userName}
         status={status}
-        qr={qr}
+        qrMap={qrMap}
+        qrLoadingUser={qrLoadingUser}
         contacts={filteredContacts}
         selectedChat={selectedChat}
         setSelectedChat={setSelectedChat}
@@ -99,7 +104,7 @@ function HomePage() {
             className="modal-input"
           />
           <div className="modal-actions">
-            <button 
+            <button
               onClick={() => {
                 createNewUser();
                 setShowModal(false);
@@ -108,7 +113,7 @@ function HomePage() {
             >
               Create
             </button>
-            <button 
+            <button
               onClick={() => setShowModal(false)}
               className="btn-secondary"
             >

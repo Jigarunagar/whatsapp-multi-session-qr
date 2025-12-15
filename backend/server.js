@@ -158,7 +158,8 @@ class UserSession {
 
                 this.sendStatus(JSON.stringify({
                     type: "qr-update",
-                    qr: this.qrCodeString
+                    qr: this.qrCodeString,
+                    userId: this.userId
                 }));
 
                 console.log(`New QR Generated for user: ${this.userId}!`);

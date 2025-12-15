@@ -10,7 +10,8 @@ import {
 } from "../utils/encryption";
 
 const useWhatsApp = (activeUser) => {
-  const [qr, setQr] = useState("");
+  const [qrMap, setQrMap] = useState({});
+  const [qrLoadingUser, setQrLoadingUser] = useState(null);
   const [status, setStatus] = useState("Disconnected");
   const [number, setNumber] = useState("");
   const [message, setMessage] = useState("");
@@ -27,16 +28,53 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     const events = new EventSource(
-      `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/status?userId=${activeUser.userId}`
+      `http://localhost:3000/api/user/status?userId=${activeUser.userId}`
     );
+
+
+    const savedQr = getQrFromLocal(activeUser.userId);
+
+    if (savedQr) {
+      setQrMap(prev => ({
+        ...prev,
+        [activeUser.userId]: savedQr
+      }));
+    } else {
+      // 🔥 Auto fetch QR
+      setQrLoadingUser(activeUser.userId);
+      fetchQr();
+    }
 
     events.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
 
-        if (data.type === "qr-update") {
-          setQr(data.qr);
+        if (data.type === "qr-update" && data.userId === activeUser.userId) {
+          setQrMap(prev => ({
+            ...prev,
+            [activeUser.userId]: data.qr
+          }));
+
+          saveQrToLocal(activeUser.userId, data.qr);
+
+          setQrLoadingUser(null);
           setStatus("Disconnected");
+          return;
+        }
+
+        // Connected event
+        if (data.type === "connected" && data.userId === activeUser.userId) {
+          setStatus("Connected");
+
+          // remove QR
+          setQrMap(prev => {
+            const copy = { ...prev };
+            delete copy[activeUser.userId];
+            return copy;
+          });
+
+          removeQrFromLocal(activeUser.userId);
+          loadContacts();
           return;
         }
 
@@ -55,10 +93,18 @@ const useWhatsApp = (activeUser) => {
 
         if (data.type === "connected") {
           setStatus("Connected");
-          setQr("");
+
+          setQrMap(prev => {
+            const copy = { ...prev };
+            delete copy[activeUser.userId];
+            return copy;
+          });
+
+          removeQrFromLocal(activeUser.userId);
           loadContacts();
           return;
-        } else if (e.data === "qr") {
+        }
+        else if (e.data === "qr") {
           setStatus("Disconnected");
           fetchQr();
         } else {
@@ -111,28 +157,36 @@ const useWhatsApp = (activeUser) => {
   const fetchQr = async () => {
     if (!activeUser) return;
 
+    setQrLoadingUser(activeUser.userId);
+
     try {
       const res = await axios.get(
-        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/qr?userId=${activeUser.userId}`
+        `http://localhost:3000/api/user/qr?userId=${activeUser.userId}`
       );
-
 
       const parser = new DOMParser();
       const htmlDoc = parser.parseFromString(res.data, "text/html");
       const img = htmlDoc.querySelector("img");
 
-      if (img) setQr(img.src);
-    } catch (err) {
+      if (img) {
+        setQrMap(prev => ({
+          ...prev,
+          [activeUser.userId]: img.src
+        }));
+
+        saveQrToLocal(activeUser.userId, img.src);
+      }
+    } catch {
       toast.error("QR fetch error");
-      console.log("QR fetch error:", err);
     }
   };
+
 
   const loadContacts = async () => {
     if (!activeUser) return;
 
     try {
-      const response = await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/contacts`, {
+      const response = await axios.get(`http://localhost:3000/api/user/contacts`, {
         headers: { "x-user-id": activeUser.userId }
       }
       );
@@ -164,7 +218,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       await axios.post(
-        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/send`,
+        `http://localhost:3000/api/user/send`,
         formData,
         {
           headers: {
@@ -201,6 +255,18 @@ const useWhatsApp = (activeUser) => {
     }
   };
 
+  const saveQrToLocal = (userId, qr) => {
+    localStorage.setItem(`wa_qr_${userId}`, qr);
+  };
+
+  const getQrFromLocal = (userId) => {
+    return localStorage.getItem(`wa_qr_${userId}`);
+  };
+
+  const removeQrFromLocal = (userId) => {
+    localStorage.removeItem(`wa_qr_${userId}`);
+  };
+
   const saveIncomingMessage = (msg) => {
     if (!activeUser) return;
 
@@ -224,7 +290,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/logout`, {
+      await axios.get(`http://localhost:3000/api/user/logout`, {
         headers: { "x-user-id": activeUser.userId }
       });
 
@@ -244,7 +310,8 @@ const useWhatsApp = (activeUser) => {
   );
 
   return {
-    qr,
+    qrMap,
+    qrLoadingUser,
     status,
     number,
     setNumber,
