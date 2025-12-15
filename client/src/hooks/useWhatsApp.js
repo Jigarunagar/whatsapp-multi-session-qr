@@ -174,16 +174,23 @@ const useWhatsApp = (activeUser) => {
     }
   }, [activeUser]);
 
+  const prevUserIdRef = useRef(null);
   useEffect(() => {
     if (!activeUser) return;
 
-    // 🔥 RESET EVERYTHING ON USER SWITCH
-    setContacts([]);
-    setSelectedChat(null);
-    setNumber("");
-    setStatus("Disconnected");
-  }, [activeUser?.userId]);
+    if (
+      prevUserIdRef.current &&
+      prevUserIdRef.current !== activeUser.userId
+    ) {
+      // 🔥 real user switch
+      setContacts([]);
+      setSelectedChat(null);
+      setNumber("");
+      setStatus("Disconnected");
+    }
 
+    prevUserIdRef.current = activeUser.userId;
+  }, [activeUser]);
 
   useEffect(() => {
     const savedNames = localStorage.getItem("wa_user_names");
