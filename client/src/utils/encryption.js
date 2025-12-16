@@ -19,7 +19,6 @@ export const decryptData = (encrypted, key) => {
   }
 };
 
-
 export const saveUsersToLocal = (users) => {
   const encrypted = encryptData(users, ENCRYPTION_KEYS.USERS);
   localStorage.setItem("wa_users", encrypted);
@@ -48,4 +47,30 @@ export const saveContactsToLocal = (contacts, userId) => {
 export const getContactsFromLocal = (userId) => {
   const encrypted = localStorage.getItem(`wa_contacts_${userId}`);
   return decryptData(encrypted, `${ENCRYPTION_KEYS.CONTACTS}_${userId}`) || [];
+};
+
+export const removeLocalStorageForUser = (userId) => {
+  if (!userId) return;
+  
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.includes(`_${userId}`) || key === `wa_qr_${userId}`) {
+      keysToRemove.push(key);
+    }
+  }
+  
+  keysToRemove.forEach(key => {
+    localStorage.removeItem(key);
+  });
+  
+  try {
+    const userNames = JSON.parse(localStorage.getItem("wa_user_names") || "{}");
+    delete userNames[userId];
+    localStorage.setItem("wa_user_names", JSON.stringify(userNames));
+  } catch (error) {
+    console.log("Error updating user names:", error);
+  }
+  
+  return keysToRemove.length;
 };

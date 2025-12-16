@@ -9,7 +9,6 @@ const app = express();
 const dotenv = require("dotenv")
 dotenv.config()
 
-
 if (!fs.existsSync("uploads")) {
     fs.mkdirSync("uploads", { recursive: true });
 }
@@ -31,48 +30,52 @@ const PORT = process.env.PORT || 3000;
 
 let userSessions = new Map();
 
-
 class SafeLocalAuth extends LocalAuth {
     async logout() {
         try {
-
+            console.log('SafeLocalAuth: Starting logout cleanup...');
+            
             if (this.client && this.client.pupBrowser) {
                 try {
+                    console.log('SafeLocalAuth: Closing browser...');
                     await this.client.pupBrowser.close();
                 } catch (e) {
                     console.log('SafeLocalAuth: Error closing browser:', e.message);
                 }
             }
-
-
             try {
-                if (this.options.dataPath) {
+                if (this.options && this.options.dataPath && this.options.clientId) {
                     const authDir = path.join(this.options.dataPath, `session-${this.options.clientId}`);
+                    console.log('SafeLocalAuth: Checking auth directory:', authDir);
+                    
                     if (fs.existsSync(authDir)) {
-
+                        console.log('SafeLocalAuth: Removing auth directory:', authDir);
                         const files = fs.readdirSync(authDir);
                         for (const file of files) {
                             try {
                                 fs.unlinkSync(path.join(authDir, file));
                             } catch (e) {
-
+                                console.log('SafeLocalAuth: Error deleting file:', file, e.message);
                             }
                         }
-
                         try {
                             fs.rmdirSync(authDir);
                         } catch (e) {
-
+                            console.log('SafeLocalAuth: Error removing directory:', e.message);
                         }
+                    } else {
+                        console.log('SafeLocalAuth: Auth directory does not exist:', authDir);
                     }
+                } else {
+                    console.log('SafeLocalAuth: No valid options for cleanup');
                 }
             } catch (error) {
                 console.log('SafeLocalAuth: Error during cleanup:', error.message);
-
+             
             }
         } catch (error) {
             console.log('SafeLocalAuth: General logout error:', error.message);
-
+            
         }
     }
 }
@@ -92,6 +95,8 @@ class UserSession {
         this.maxReconnectAttempts = 5;
         this.isInitializing = false;
         this.cleanupTimeout = null;
+        this.reconnectTimeout = null;
+        this.authStrategy = null;
     }
 
     sendStatus(msg) {
@@ -99,7 +104,6 @@ class UserSession {
             try {
                 res.write(`data: ${msg}\n\n`);
             } catch (err) {
-
                 this.clients = this.clients.filter((c) => c !== res);
             }
         });
@@ -114,20 +118,18 @@ class UserSession {
         console.log(`Creating WhatsApp Client for user: ${this.userId}...`);
         this.isInitializing = true;
 
-        if (this.cleanupTimeout) {
-            clearTimeout(this.cleanupTimeout);
-            this.cleanupTimeout = null;
-        }
-
+        this.clearTimeouts();
 
         this.cleanupClient();
 
         try {
+            this.authStrategy = new SafeLocalAuth({
+                clientId: this.userId,
+                dataPath: path.join(process.cwd(), '.wwebjs_auth')
+            });
+
             this.client = new Client({
-                authStrategy: new SafeLocalAuth({
-                    clientId: this.userId,
-                    dataPath: path.join(process.cwd(), '.wwebjs_auth')
-                }),
+                authStrategy: this.authStrategy,
                 puppeteer: {
                     headless: true,
                     args: [
@@ -149,8 +151,10 @@ class UserSession {
                 qrMaxRetries: 3
             });
 
+            this.client.authStrategy = this.authStrategy;
 
             this.client.on("qr", async (qr) => {
+                console.log(`QR generated for user: ${this.userId}`);
                 this.isReady = false;
                 this.isInitializing = false;
                 this.qrCodeString = await qrcode.toDataURL(qr);
@@ -158,14 +162,15 @@ class UserSession {
                 this.sendStatus(JSON.stringify({
                     type: "qr-update",
                     qr: this.qrCodeString,
-                    userId: this.userId
+                    userId: this.userId,
+                    message: "Scan QR code to connect"
                 }));
 
                 console.log(`New QR Generated for user: ${this.userId}!`);
             });
 
-
             this.client.on("ready", () => {
+                console.log(`Client ready for user: ${this.userId}`);
                 this.isReady = true;
                 this.isInitializing = false;
                 this.qrCodeString = "";
@@ -181,41 +186,59 @@ class UserSession {
                     number: myNumber
                 }));
                 this.sendStatus(JSON.stringify({
-                    type: "connected"
+                    type: "connected",
+                    message: "WhatsApp connected successfully"
                 }));
                 console.log(`Connected as: ${myName} (${myNumber}) for user: ${this.userId}`);
             });
 
-
             this.client.on("authenticated", () => {
                 console.log(`User ${this.userId} authenticated!`);
                 this.reconnectAttempts = 0;
+                this.sendStatus(JSON.stringify({
+                    type: "authenticated",
+                    message: "Authentication successful"
+                }));
             });
-
 
             this.client.on("auth_failure", (msg) => {
                 console.log(`Authentication failed for user ${this.userId}:`, msg);
                 this.isInitializing = false;
+                this.isReady = false;
                 this.reconnectAttempts++;
+                
+                this.sendStatus(JSON.stringify({
+                    type: "auth-failure",
+                    message: "Authentication failed",
+                    reason: msg
+                }));
+                
                 this.scheduleReconnect();
             });
 
-
-            this.client.on("disconnected", (reason) => {
+            this.client.on("disconnected", async (reason) => {
                 console.log(`Phone disconnected for user ${this.userId}:`, reason);
                 this.isReady = false;
                 this.isInitializing = false;
                 this.qrCodeString = "";
 
                 this.sendStatus(JSON.stringify({
-                    type: "disconnected",
-                    reason: reason
+                    type: "phone-logged-out",
+                    reason: reason,
+                    userId: this.userId,
+                    timestamp: new Date().toISOString(),
+                    message: "Phone was logged out. New QR code will be generated."
                 }));
 
-                this.reconnectAttempts++;
-                this.scheduleReconnect();
-            });
+                await this.cleanupSession();
 
+                this.reconnectAttempts = 0;
+
+                console.log(`Reinitializing client for ${this.userId} after disconnect...`);
+                setTimeout(() => {
+                    this.initializeClient();
+                }, 2000);
+            });
 
             this.client.on("message", (msg) => {
                 this.sendStatus(JSON.stringify({
@@ -226,41 +249,77 @@ class UserSession {
                 }));
             });
 
-
             this.client.on("loading_screen", (percent, message) => {
                 console.log(`Loading screen for ${this.userId}: ${percent}% - ${message}`);
+                this.sendStatus(JSON.stringify({
+                    type: "loading",
+                    percent: percent,
+                    message: message
+                }));
             });
 
+            this.client.on("error", (error) => {
+                console.error(`Client error for ${this.userId}:`, error.message);
+                this.sendStatus(JSON.stringify({
+                    type: "error",
+                    message: error.message
+                }));
+            });
 
             this.client.initialize().catch(err => {
                 console.error(`Failed to initialize client for ${this.userId}:`, err.message);
                 this.isInitializing = false;
+                this.isReady = false;
                 this.reconnectAttempts++;
+                
+                this.sendStatus(JSON.stringify({
+                    type: "init-error",
+                    message: "Failed to initialize client"
+                }));
+                
                 this.scheduleReconnect();
             });
 
         } catch (error) {
             console.error(`Error creating client for ${this.userId}:`, error.message);
             this.isInitializing = false;
+            this.isReady = false;
             this.reconnectAttempts++;
             this.scheduleReconnect();
+        }
+    }
+
+    async cleanupSession() {
+        console.log(`Cleaning up session for user: ${this.userId}`);
+        
+        try {
+            if (this.authStrategy) {
+                try {
+                    await this.authStrategy.logout();
+                } catch (e) {
+                    console.log(`Error during auth logout for ${this.userId}:`, e.message);
+                }
+            }
+            this.cleanupClient();
+            
+            this.authStrategy = null;
+            
+        } catch (error) {
+            console.log(`Error in cleanupSession for ${this.userId}:`, error.message);
         }
     }
 
     cleanupClient() {
         if (this.client) {
             try {
-
+                console.log(`Cleaning up client for user: ${this.userId}`);
                 const clientToCleanup = this.client;
 
-
                 clientToCleanup.removeAllListeners();
-
 
                 const cleanupPromise = new Promise((resolve) => {
                     setTimeout(async () => {
                         try {
-
                             if (clientToCleanup.pupBrowser) {
                                 try {
                                     const pages = await clientToCleanup.pupBrowser.pages();
@@ -268,18 +327,19 @@ class UserSession {
                                         try {
                                             await page.close();
                                         } catch (e) {
-
+                                            // Ignore page close errors
                                         }
                                     }
                                     await clientToCleanup.pupBrowser.close();
+                                    console.log(`Browser closed for ${this.userId}`);
                                 } catch (e) {
                                     console.log(`Error closing browser for ${this.userId}:`, e.message);
                                 }
                             }
 
-
                             try {
                                 await clientToCleanup.destroy();
+                                console.log(`Client destroyed for ${this.userId}`);
                             } catch (e) {
                                 console.log(`Error destroying client for ${this.userId}:`, e.message);
                             }
@@ -291,13 +351,23 @@ class UserSession {
                     }, 1000);
                 });
 
-
                 this.client = null;
 
             } catch (err) {
                 console.log(`Error in cleanupClient for ${this.userId}:`, err.message);
                 this.client = null;
             }
+        }
+    }
+
+    clearTimeouts() {
+        if (this.cleanupTimeout) {
+            clearTimeout(this.cleanupTimeout);
+            this.cleanupTimeout = null;
+        }
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
         }
     }
 
@@ -311,14 +381,12 @@ class UserSession {
             return;
         }
 
-        const delay = Math.min(10000, this.reconnectAttempts * 3000); // Max 10 seconds
+        const delay = Math.min(10000, this.reconnectAttempts * 3000);
         console.log(`Scheduling reconnect for user: ${this.userId} in ${delay}ms (Attempt: ${this.reconnectAttempts})`);
 
-        if (this.cleanupTimeout) {
-            clearTimeout(this.cleanupTimeout);
-        }
+        this.clearTimeouts();
 
-        this.cleanupTimeout = setTimeout(() => {
+        this.reconnectTimeout = setTimeout(() => {
             this.initializeClient();
         }, delay);
     }
@@ -385,21 +453,15 @@ class UserSession {
     destroy() {
         console.log(`Destroying session for user: ${this.userId}`);
 
+        this.clearTimeouts();
 
-        if (this.cleanupTimeout) {
-            clearTimeout(this.cleanupTimeout);
-            this.cleanupTimeout = null;
-        }
-
-
-        this.cleanupClient();
-
+        this.cleanupSession();
 
         this.clients.forEach(res => {
             try {
                 res.end();
             } catch (err) {
-
+                // Ignore errors
             }
         });
         this.clients = [];
@@ -426,7 +488,6 @@ function validateUserSession(req, res, next) {
     next();
 }
 
-
 app.post("/api/user/create", (req, res) => {
     try {
         const { userName = "New User" } = req.body;
@@ -434,7 +495,6 @@ app.post("/api/user/create", (req, res) => {
 
         const newSession = new UserSession(userId, userName);
         userSessions.set(userId, newSession);
-
 
         setTimeout(() => {
             newSession.initializeClient();
@@ -461,7 +521,6 @@ app.get("/api/user/status", validateUserSession, (req, res) => {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
-
     res.write(`data: ${JSON.stringify({
         type: "init",
         status: session.isReady ? "connected" : "disconnected",
@@ -470,15 +529,12 @@ app.get("/api/user/status", validateUserSession, (req, res) => {
         userId: session.userId
     })}\n\n`);
 
-
     session.clients.push(res);
-
 
     req.on("close", () => {
         session.clients = session.clients.filter((c) => c !== res);
         res.end();
     });
-
 
     const pingInterval = setInterval(() => {
         try {
@@ -488,12 +544,10 @@ app.get("/api/user/status", validateUserSession, (req, res) => {
         }
     }, 30000);
 
-
     req.on("close", () => {
         clearInterval(pingInterval);
     });
 });
-
 
 app.get("/api/user/qr", validateUserSession, (req, res) => {
     const session = req.userSession;
@@ -505,62 +559,6 @@ app.get("/api/user/qr", validateUserSession, (req, res) => {
             <title>WhatsApp QR Code - ${session.userName}</title>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                .container {
-                    background: white;
-                    padding: 40px;
-                    border-radius: 20px;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                    text-align: center;
-                    max-width: 500px;
-                    width: 100%;
-                }
-                h2 {
-                    color: #333;
-                    margin-bottom: 20px;
-                }
-                #qrContainer {
-                    margin: 30px 0;
-                    min-height: 250px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                #statusText {
-                    font-size: 18px;
-                    font-weight: bold;
-                    margin: 20px 0;
-                    padding: 10px;
-                    border-radius: 10px;
-                }
-                .connected {
-                    color: #25D366;
-                    background: #e8f7ed;
-                }
-                .disconnected {
-                    color: #dc3545;
-                    background: #f8d7da;
-                }
-                .loading {
-                    color: #ffc107;
-                    background: #fff3cd;
-                }
-                .info {
-                    font-size: 14px;
-                    color: #666;
-                    margin-top: 20px;
-                }
-            </style>
         </head>
         <body>
             <div class="container">
@@ -574,8 +572,12 @@ app.get("/api/user/qr", validateUserSession, (req, res) => {
                     ${session.isReady ? "✅ Connected!" : "❌ Disconnected"}
                 </div>
                 <div class="info">
-                    User ID: ${session.userId}<br>
-                    Scan the QR code with WhatsApp to connect
+                    <strong>User ID:</strong> ${session.userId}<br><br>
+                    <strong>Instructions:</strong><br>
+                    1. Open WhatsApp on your phone<br>
+                    2. Tap Menu → Linked Devices → Link a Device<br>
+                    3. Scan the QR code above<br>
+                    4. Wait for connection confirmation
                 </div>
             </div>
             <script>
@@ -590,10 +592,8 @@ app.get("/api/user/qr", validateUserSession, (req, res) => {
                         
                         switch(data.type) {
                             case "init":
-                            case "qr-update":
-                                if (data.qrCode || data.qr) {
-                                    const qr = data.qrCode || data.qr;
-                                    qrContainer.innerHTML = '<img src="' + qr + '" width="250" height="250" alt="QR Code"/>';
+                                if (data.qrCode) {
+                                    qrContainer.innerHTML = '<img src="' + data.qrCode + '" width="250" height="250" alt="QR Code"/>';
                                     statusText.textContent = "❌ Disconnected - Scan QR Code";
                                     statusText.className = "disconnected";
                                 } else if (data.status === "connected") {
@@ -602,10 +602,20 @@ app.get("/api/user/qr", validateUserSession, (req, res) => {
                                     statusText.className = "connected";
                                 }
                                 break;
+                            case "qr-update":
+                                qrContainer.innerHTML = '<img src="' + data.qr + '" width="250" height="250" alt="QR Code"/>';
+                                statusText.textContent = "❌ Disconnected - Scan QR Code";
+                                statusText.className = "disconnected";
+                                break;
                             case "connected":
                                 qrContainer.innerHTML = '<div style="font-size: 50px;">✅</div>';
                                 statusText.textContent = "✅ Connected!";
                                 statusText.className = "connected";
+                                break;
+                            case "phone-logged-out":
+                                qrContainer.innerHTML = '<div class="loading">Generating new QR code...</div>';
+                                statusText.textContent = "❌ Phone logged out. New QR code will be generated...";
+                                statusText.className = "disconnected";
                                 break;
                             case "disconnected":
                                 qrContainer.innerHTML = '<div style="font-size: 50px;">❌</div>';
@@ -617,6 +627,9 @@ app.get("/api/user/qr", validateUserSession, (req, res) => {
                                 statusText.textContent = "❌ Connection Failed";
                                 statusText.className = "disconnected";
                                 eventSource.close();
+                                break;
+                            case "loading":
+                                qrContainer.innerHTML = '<div class="loading">Loading... ' + data.percent + '%</div>';
                                 break;
                             case "ping":
                                 // Keep connection alive
@@ -721,15 +734,12 @@ app.get("/api/user/logout", validateUserSession, (req, res) => {
         session.qrCodeString = "";
         session.reconnectAttempts = 0;
 
-
         session.sendStatus(JSON.stringify({
             type: "logout",
             message: "Logging out..."
         }));
 
-
-        session.cleanupClient();
-
+        session.cleanupSession();
 
         setTimeout(() => {
             session.initializeClient();
@@ -744,7 +754,6 @@ app.get("/api/user/logout", validateUserSession, (req, res) => {
     }
 });
 
-
 app.get("/health", (req, res) => {
     res.json({
         status: "OK",
@@ -752,7 +761,6 @@ app.get("/health", (req, res) => {
         activeSessions: userSessions.size
     });
 });
-
 
 setInterval(() => {
     if (fs.existsSync("uploads")) {
@@ -764,11 +772,11 @@ setInterval(() => {
                     fs.unlinkSync(filePath);
                 }
             } catch (err) {
-
+                // Ignore errors
             }
         });
     }
-}, 3600000);
+}, 3600000); 
 
 app.listen(PORT, () => {
     console.log(`Server running: http://localhost:${PORT}`);

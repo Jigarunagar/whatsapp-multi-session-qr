@@ -31,11 +31,11 @@ const WhatsAppSidebar = ({
     );
   }
 
-
   const userQr = qrMap?.[activeUser.userId];
   const isGenerating = qrLoadingUser === activeUser.userId;
-  const isConnected = status === "Connected" && !userQr;
+  const isConnected = status === "Connected";
 
+  const showQR = !isConnected || userQr;
 
   return (
     <div className="wa-sidebar">
@@ -52,7 +52,38 @@ const WhatsAppSidebar = ({
         </button>
       </div>
 
-      {isConnected ? (
+
+      {showQR ? (
+        <div className="qr-area">
+          <div className="qr-header">
+            <h4>WhatsApp Connection</h4>
+            <p className="qr-status">
+              {isConnected ? "Reconnect" : "Scan QR Code to Connect"}
+            </p>
+          </div>
+
+
+          {userQr && (
+            <div className="qr-container">
+              <QRCodeDisplay
+                qrCode={userQr}
+                title={`Scan for ${userName}`}
+              />
+              <div className="qr-instructions">
+                <br />
+                <p>1. Open WhatsApp on your phone</p>
+                <p>2. Tap Menu → Linked Devices</p>
+              </div>
+            </div>
+          )}
+
+          {!userQr && !isGenerating && (
+            <div className="no-qr">
+              🔄 QR code generating...
+            </div>
+          )}
+        </div>
+      ) : (
         <>
           <div className="search">
             <FiSearch className="search-icon" />
@@ -87,11 +118,6 @@ const WhatsAppSidebar = ({
             ))}
           </div>
         </>
-      ) : (
-        <div className="qr-area">
-          {isGenerating && <p>🔄 QR code generating...</p>}
-          {userQr && <QRCodeDisplay qrCode={userQr} title={`Scan QR for ${userName}`} />}
-        </div>
       )}
 
       <div className={`status-box ${isConnected ? "ok" : "not-ok"}`}>
