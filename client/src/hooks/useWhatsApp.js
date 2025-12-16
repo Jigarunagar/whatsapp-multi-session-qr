@@ -20,7 +20,6 @@ const useWhatsApp = (activeUser) => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  // const [userName, setUserName] = useState("");
   const [userNames, setUserNames] = useState({});
 
 
@@ -42,7 +41,7 @@ const useWhatsApp = (activeUser) => {
         [activeUser.userId]: savedQr
       }));
     } else {
-      // 🔥 Auto fetch QR
+      
       setQrLoadingUser(activeUser.userId);
       fetchQr();
     }
@@ -64,11 +63,11 @@ const useWhatsApp = (activeUser) => {
           return;
         }
 
-        // Connected event
+        
         if (data.type === "connected" && data.userId === activeUser.userId) {
           setStatus("Connected");
 
-          // remove QR
+          
           setQrMap(prev => {
             const copy = { ...prev };
             delete copy[activeUser.userId];
@@ -83,9 +82,7 @@ const useWhatsApp = (activeUser) => {
         if (data.type === "init") {
           if (data.status === "connected") {
             setStatus("Connected");
-            // setUserName(data.userName || activeUser.userName);
-
-            // 🔥 FORCE contacts load
+            
             loadContacts();
 
             setQrMap(prev => {
@@ -182,7 +179,6 @@ const useWhatsApp = (activeUser) => {
       prevUserIdRef.current &&
       prevUserIdRef.current !== activeUser.userId
     ) {
-      // 🔥 real user switch
       setContacts([]);
       setSelectedChat(null);
       setNumber("");
@@ -374,7 +370,6 @@ const useWhatsApp = (activeUser) => {
     chatHistory,
     searchTerm,
     setSearchTerm,
-    // userName,
     userNames,
     handleSend,
     logoutUser,

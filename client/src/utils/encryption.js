@@ -19,7 +19,7 @@ export const decryptData = (encrypted, key) => {
   }
 };
 
-// Users encryption
+
 export const saveUsersToLocal = (users) => {
   const encrypted = encryptData(users, ENCRYPTION_KEYS.USERS);
   localStorage.setItem("wa_users", encrypted);
@@ -30,7 +30,6 @@ export const getUsersFromLocal = () => {
   return decryptData(encrypted, ENCRYPTION_KEYS.USERS) || [];
 };
 
-// Chat history encryption
 export const saveChatHistoryToLocal = (data, userId) => {
   const encrypted = encryptData(data, `${ENCRYPTION_KEYS.CHAT}_${userId}`);
   localStorage.setItem(`wa_chatHistory_${userId}`, encrypted);
@@ -41,7 +40,6 @@ export const getChatHistoryFromLocal = (userId) => {
   return decryptData(encrypted, `${ENCRYPTION_KEYS.CHAT}_${userId}`) || {};
 };
 
-// Contacts encryption
 export const saveContactsToLocal = (contacts, userId) => {
   const encrypted = encryptData(contacts, `${ENCRYPTION_KEYS.CONTACTS}_${userId}`);
   localStorage.setItem(`wa_contacts_${userId}`, encrypted);

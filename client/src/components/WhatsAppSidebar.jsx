@@ -52,11 +52,6 @@ const WhatsAppSidebar = ({
         </button>
       </div>
 
-      {/* -------------------------------------------
-         🔥 FIXED LOGIC:
-         If QR is EMPTY → Show Contacts
-         If QR exists → Show QR Code
-      ------------------------------------------- */}
       {isConnected ? (
         <>
           <div className="search">

@@ -9,12 +9,12 @@ const app = express();
 const dotenv = require("dotenv")
 dotenv.config()
 
-// Ensure uploads directory exists
+
 if (!fs.existsSync("uploads")) {
     fs.mkdirSync("uploads", { recursive: true });
 }
 
-const upload = multer({ 
+const upload = multer({
     dest: "uploads/",
     fileFilter: (req, file, cb) => {
         cb(null, true);
@@ -31,11 +31,11 @@ const PORT = process.env.PORT || 3000;
 
 let userSessions = new Map();
 
-// Fixed SafeLocalAuth class
+
 class SafeLocalAuth extends LocalAuth {
     async logout() {
         try {
-            // First try to close browser properly
+
             if (this.client && this.client.pupBrowser) {
                 try {
                     await this.client.pupBrowser.close();
@@ -43,36 +43,36 @@ class SafeLocalAuth extends LocalAuth {
                     console.log('SafeLocalAuth: Error closing browser:', e.message);
                 }
             }
-            
-            // Then try to remove auth directory
+
+
             try {
                 if (this.options.dataPath) {
                     const authDir = path.join(this.options.dataPath, `session-${this.options.clientId}`);
                     if (fs.existsSync(authDir)) {
-                        // Remove all files in directory
+
                         const files = fs.readdirSync(authDir);
                         for (const file of files) {
                             try {
                                 fs.unlinkSync(path.join(authDir, file));
                             } catch (e) {
-                                // Ignore file deletion errors
+
                             }
                         }
-                        // Try to remove directory
+
                         try {
                             fs.rmdirSync(authDir);
                         } catch (e) {
-                            // Directory might not be empty, ignore
+
                         }
                     }
                 }
             } catch (error) {
                 console.log('SafeLocalAuth: Error during cleanup:', error.message);
-                // Don't throw error
+
             }
         } catch (error) {
             console.log('SafeLocalAuth: General logout error:', error.message);
-            // Don't throw error
+
         }
     }
 }
@@ -99,7 +99,7 @@ class UserSession {
             try {
                 res.write(`data: ${msg}\n\n`);
             } catch (err) {
-                // Connection closed, remove from clients
+
                 this.clients = this.clients.filter((c) => c !== res);
             }
         });
@@ -114,18 +114,17 @@ class UserSession {
         console.log(`Creating WhatsApp Client for user: ${this.userId}...`);
         this.isInitializing = true;
 
-        // Clear any existing cleanup timeout
         if (this.cleanupTimeout) {
             clearTimeout(this.cleanupTimeout);
             this.cleanupTimeout = null;
         }
 
-        // Clean up old client if exists
+
         this.cleanupClient();
 
         try {
             this.client = new Client({
-                authStrategy: new SafeLocalAuth({ 
+                authStrategy: new SafeLocalAuth({
                     clientId: this.userId,
                     dataPath: path.join(process.cwd(), '.wwebjs_auth')
                 }),
@@ -150,7 +149,7 @@ class UserSession {
                 qrMaxRetries: 3
             });
 
-            // QR Event
+
             this.client.on("qr", async (qr) => {
                 this.isReady = false;
                 this.isInitializing = false;
@@ -165,7 +164,7 @@ class UserSession {
                 console.log(`New QR Generated for user: ${this.userId}!`);
             });
 
-            // Ready Event
+
             this.client.on("ready", () => {
                 this.isReady = true;
                 this.isInitializing = false;
@@ -187,13 +186,13 @@ class UserSession {
                 console.log(`Connected as: ${myName} (${myNumber}) for user: ${this.userId}`);
             });
 
-            // Authenticated Event
+
             this.client.on("authenticated", () => {
                 console.log(`User ${this.userId} authenticated!`);
                 this.reconnectAttempts = 0;
             });
 
-            // Authentication Failure Event
+
             this.client.on("auth_failure", (msg) => {
                 console.log(`Authentication failed for user ${this.userId}:`, msg);
                 this.isInitializing = false;
@@ -201,23 +200,23 @@ class UserSession {
                 this.scheduleReconnect();
             });
 
-            // Disconnected Event
+
             this.client.on("disconnected", (reason) => {
                 console.log(`Phone disconnected for user ${this.userId}:`, reason);
                 this.isReady = false;
                 this.isInitializing = false;
                 this.qrCodeString = "";
-                
+
                 this.sendStatus(JSON.stringify({
                     type: "disconnected",
                     reason: reason
                 }));
-                
+
                 this.reconnectAttempts++;
                 this.scheduleReconnect();
             });
 
-            // Message Event
+
             this.client.on("message", (msg) => {
                 this.sendStatus(JSON.stringify({
                     type: "incoming",
@@ -227,12 +226,12 @@ class UserSession {
                 }));
             });
 
-            // Loading Screen Event
+
             this.client.on("loading_screen", (percent, message) => {
                 console.log(`Loading screen for ${this.userId}: ${percent}% - ${message}`);
             });
 
-            // Initialize client with error handling
+
             this.client.initialize().catch(err => {
                 console.error(`Failed to initialize client for ${this.userId}:`, err.message);
                 this.isInitializing = false;
@@ -251,17 +250,17 @@ class UserSession {
     cleanupClient() {
         if (this.client) {
             try {
-                // Store reference to client
+
                 const clientToCleanup = this.client;
-                
-                // Remove all event listeners
+
+
                 clientToCleanup.removeAllListeners();
-                
-                // Create a promise for cleanup
+
+
                 const cleanupPromise = new Promise((resolve) => {
                     setTimeout(async () => {
                         try {
-                            // Check if browser is still open
+
                             if (clientToCleanup.pupBrowser) {
                                 try {
                                     const pages = await clientToCleanup.pupBrowser.pages();
@@ -269,7 +268,7 @@ class UserSession {
                                         try {
                                             await page.close();
                                         } catch (e) {
-                                            // Ignore page close errors
+
                                         }
                                     }
                                     await clientToCleanup.pupBrowser.close();
@@ -277,8 +276,8 @@ class UserSession {
                                     console.log(`Error closing browser for ${this.userId}:`, e.message);
                                 }
                             }
-                            
-                            // Destroy client instance
+
+
                             try {
                                 await clientToCleanup.destroy();
                             } catch (e) {
@@ -292,9 +291,9 @@ class UserSession {
                     }, 1000);
                 });
 
-                // Set client to null immediately
+
                 this.client = null;
-                
+
             } catch (err) {
                 console.log(`Error in cleanupClient for ${this.userId}:`, err.message);
                 this.client = null;
@@ -315,7 +314,6 @@ class UserSession {
         const delay = Math.min(10000, this.reconnectAttempts * 3000); // Max 10 seconds
         console.log(`Scheduling reconnect for user: ${this.userId} in ${delay}ms (Attempt: ${this.reconnectAttempts})`);
 
-        // Clear any existing timeout
         if (this.cleanupTimeout) {
             clearTimeout(this.cleanupTimeout);
         }
@@ -386,22 +384,22 @@ class UserSession {
 
     destroy() {
         console.log(`Destroying session for user: ${this.userId}`);
-        
-        // Clear any pending timeouts
+
+
         if (this.cleanupTimeout) {
             clearTimeout(this.cleanupTimeout);
             this.cleanupTimeout = null;
         }
-        
-        // Clean up client
+
+
         this.cleanupClient();
-        
-        // Close all SSE connections
+
+
         this.clients.forEach(res => {
             try {
                 res.end();
             } catch (err) {
-                // Ignore errors
+
             }
         });
         this.clients = [];
@@ -428,7 +426,7 @@ function validateUserSession(req, res, next) {
     next();
 }
 
-// Routes
+
 app.post("/api/user/create", (req, res) => {
     try {
         const { userName = "New User" } = req.body;
@@ -437,7 +435,7 @@ app.post("/api/user/create", (req, res) => {
         const newSession = new UserSession(userId, userName);
         userSessions.set(userId, newSession);
 
-        // Delay initialization to ensure session is created
+
         setTimeout(() => {
             newSession.initializeClient();
         }, 100);
@@ -463,7 +461,7 @@ app.get("/api/user/status", validateUserSession, (req, res) => {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
-    // Send initial status immediately
+
     res.write(`data: ${JSON.stringify({
         type: "init",
         status: session.isReady ? "connected" : "disconnected",
@@ -472,31 +470,30 @@ app.get("/api/user/status", validateUserSession, (req, res) => {
         userId: session.userId
     })}\n\n`);
 
-    // Add client to session
+
     session.clients.push(res);
 
-    // Remove client on close
+
     req.on("close", () => {
         session.clients = session.clients.filter((c) => c !== res);
         res.end();
     });
 
-    // Send ping every 30 seconds to keep connection alive
+
     const pingInterval = setInterval(() => {
         try {
-            res.write(`data: ${JSON.stringify({type: "ping", timestamp: Date.now()})}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: "ping", timestamp: Date.now() })}\n\n`);
         } catch (err) {
             clearInterval(pingInterval);
         }
     }, 30000);
 
-    // Clear interval on connection close
+
     req.on("close", () => {
         clearInterval(pingInterval);
     });
 });
 
-// ... [Keep all other routes exactly the same as before: /api/user/qr, /api/user/send, /api/user/contacts, etc.]
 
 app.get("/api/user/qr", validateUserSession, (req, res) => {
     const session = req.userSession;
@@ -570,8 +567,8 @@ app.get("/api/user/qr", validateUserSession, (req, res) => {
                 <h2>WhatsApp Status - ${session.userName}</h2>
                 <div id="qrContainer">
                     ${!session.isReady && session.qrCodeString ?
-                    `<img src="${session.qrCodeString}" width="250" height="250" alt="QR Code"/>` :
-                    `<div class="loading">Loading...</div>`}
+            `<img src="${session.qrCodeString}" width="250" height="250" alt="QR Code"/>` :
+            `<div class="loading">Loading...</div>`}
                 </div>
                 <div id="statusText" class="${session.isReady ? 'connected' : 'disconnected'}">
                     ${session.isReady ? "✅ Connected!" : "❌ Disconnected"}
@@ -653,7 +650,7 @@ app.post("/api/user/send", upload.single("file"), validateUserSession, async (re
 
     if (!number) {
         if (filePath && fs.existsSync(filePath)) {
-            try { fs.unlinkSync(filePath); } catch(e) {}
+            try { fs.unlinkSync(filePath); } catch (e) { }
         }
         return res.status(400).json({ error: "Number is required" });
     }
@@ -724,61 +721,60 @@ app.get("/api/user/logout", validateUserSession, (req, res) => {
         session.qrCodeString = "";
         session.reconnectAttempts = 0;
 
-        // Send logout status
+
         session.sendStatus(JSON.stringify({
             type: "logout",
             message: "Logging out..."
         }));
 
-        // Clean up client
+
         session.cleanupClient();
 
-        // Reinitialize after delay
+
         setTimeout(() => {
             session.initializeClient();
         }, 3000);
 
-        res.json({ 
-            success: true, 
-            message: "Logged out! QR regenerating..." 
+        res.json({
+            success: true,
+            message: "Logged out! QR regenerating..."
         });
     } catch (err) {
         res.status(500).json({ error: "Error: " + err.message });
     }
 });
 
-// Health check endpoint
+
 app.get("/health", (req, res) => {
-    res.json({ 
-        status: "OK", 
+    res.json({
+        status: "OK",
         timestamp: new Date().toISOString(),
-        activeSessions: userSessions.size 
+        activeSessions: userSessions.size
     });
 });
 
-// Clean up old uploaded files periodically
+
 setInterval(() => {
     if (fs.existsSync("uploads")) {
         fs.readdirSync("uploads").forEach(file => {
             const filePath = path.join("uploads", file);
             try {
                 const stats = fs.statSync(filePath);
-                if (stats.mtime < Date.now() - 3600000) { // Older than 1 hour
+                if (stats.mtime < Date.now() - 3600000) {
                     fs.unlinkSync(filePath);
                 }
             } catch (err) {
-                // Ignore errors
+
             }
         });
     }
-}, 3600000); // Run every hour
+}, 3600000);
 
 app.listen(PORT, () => {
     console.log(`Server running: http://localhost:${PORT}`);
     console.log(`Multi-user WhatsApp API ready`);
 });
 
-// Graceful shutdown
 process.on('SIGINT', () => {
     console.log('Shutting down all user sessions...');
     userSessions.forEach(session => session.destroy());

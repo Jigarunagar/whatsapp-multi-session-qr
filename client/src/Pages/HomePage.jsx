@@ -35,7 +35,6 @@ function HomePage() {
     chatHistory,
     searchTerm,
     setSearchTerm,
-    // userName,
     userNames,
     handleSend,
     logoutUser,
