@@ -64,7 +64,13 @@ const ChatArea = ({
             <p>User is not connected</p>
           </div>
         )}
-        
+        {/* {!selectedChat && status === "Connected" && (
+          <div className="">
+            <img src="/back.png" alt="Welcome" />
+            <p>Select a contact to view messages</p>
+          </div>
+        )} */}
+
         {selectedChat && chatHistory[selectedChat.number] && (
           <>
             {chatHistory[selectedChat.number].map((msg, idx) => (

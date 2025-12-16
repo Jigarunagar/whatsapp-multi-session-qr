@@ -35,6 +35,7 @@ const WhatsAppSidebar = ({
   const isGenerating = qrLoadingUser === activeUser.userId;
   const isConnected = status === "Connected";
 
+  // Show QR if disconnected OR if QR exists
   const showQR = !isConnected || userQr;
 
   return (
@@ -52,6 +53,7 @@ const WhatsAppSidebar = ({
         </button>
       </div>
 
+      {/* Show QR if disconnected */}
 
       {showQR ? (
         <div className="qr-area">
