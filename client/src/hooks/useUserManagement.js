@@ -31,7 +31,7 @@ const useUserManagement = () => {
     }
 
     try {
-      const response = await axios.post("https://whatsapp-multi-session-qr-1.onrender.com/api/user/create", {
+      const response = await axios.post("https://whatsapp-multi-session-qr-production.up.railway.app/api/user/create", {
         userName: newUserName,
       });
 
@@ -59,7 +59,7 @@ const useUserManagement = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
 
     try {
-      await axios.delete(`https://whatsapp-multi-session-qr-1.onrender.com/api/user/${userId}`);
+      await axios.delete(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/${userId}`);
 
       const updatedUsers = users.filter((user) => user.userId !== userId);
       setUsers(updatedUsers);
