@@ -36,7 +36,7 @@ class SafeLocalAuth extends LocalAuth {
     async logout() {
         try {
             console.log('SafeLocalAuth: Starting logout cleanup...');
-            
+
             // First try to close browser properly
             if (this.client && this.client.pupBrowser) {
                 try {
@@ -53,7 +53,7 @@ class SafeLocalAuth extends LocalAuth {
                 if (this.options && this.options.dataPath && this.options.clientId) {
                     const authDir = path.join(this.options.dataPath, `session-${this.options.clientId}`);
                     console.log('SafeLocalAuth: Checking auth directory:', authDir);
-                    
+
                     if (fs.existsSync(authDir)) {
                         console.log('SafeLocalAuth: Removing auth directory:', authDir);
                         // Remove all files in directory
@@ -223,13 +223,13 @@ class UserSession {
                 this.isInitializing = false;
                 this.isReady = false;
                 this.reconnectAttempts++;
-                
+
                 this.sendStatus(JSON.stringify({
                     type: "auth-failure",
                     message: "Authentication failed",
                     reason: msg
                 }));
-                
+
                 this.scheduleReconnect();
             });
 
@@ -297,12 +297,12 @@ class UserSession {
                 this.isInitializing = false;
                 this.isReady = false;
                 this.reconnectAttempts++;
-                
+
                 this.sendStatus(JSON.stringify({
                     type: "init-error",
                     message: "Failed to initialize client"
                 }));
-                
+
                 this.scheduleReconnect();
             });
 
@@ -317,7 +317,7 @@ class UserSession {
 
     async cleanupSession() {
         console.log(`Cleaning up session for user: ${this.userId}`);
-        
+
         try {
             // Try to logout from auth strategy
             if (this.authStrategy) {
@@ -327,13 +327,13 @@ class UserSession {
                     console.log(`Error during auth logout for ${this.userId}:`, e.message);
                 }
             }
-            
+
             // Clean up client
             this.cleanupClient();
-            
+
             // Clear auth strategy
             this.authStrategy = null;
-            
+
         } catch (error) {
             console.log(`Error in cleanupSession for ${this.userId}:`, error.message);
         }
@@ -465,23 +465,50 @@ class UserSession {
         }
     }
 
-    async getContacts() {
+    async getContacts(includeGroups = true) {
         if (!this.isReady) {
             throw new Error("WhatsApp not connected!");
         }
 
         try {
             const chats = await this.client.getChats();
-            const contacts = chats
-                .filter(chat => chat.isGroup === false)
-                .map(c => ({
-                    name: c.name || c.contact?.pushname || c.contact?.number || "Unknown",
-                    number: c.id.user,
-                    id: c.id._serialized
-                }));
+            const contacts = chats.map(chat => ({
+                name: chat.name || chat.contact?.pushname || chat.contact?.number || "Unknown",
+                number: chat.id.user,
+                id: chat.id._serialized,
+                isGroup: chat.isGroup,
+                isReadOnly: chat.isReadOnly,
+                participants: chat.isGroup ? chat.participants.map(p => ({
+                    id: p.id._serialized,
+                    name: p.name || p.pushname || p.number || "Unknown"
+                })) : [],
+                timestamp: chat.timestamp,
+                unreadCount: chat.unreadCount,
+                archived: chat.archived,
+                pinned: chat.pinned,
+                // Group specific fields
+                groupMetadata: chat.isGroup ? {
+                    creation: chat.groupMetadata?.creation,
+                    desc: chat.groupMetadata?.desc,
+                    owner: chat.groupMetadata?.owner,
+                    participants: chat.groupMetadata?.participants?.map(p => ({
+                        id: p.id._serialized,
+                        isAdmin: p.isAdmin,
+                        isSuperAdmin: p.isSuperAdmin
+                    })),
+                    restrict: chat.groupMetadata?.restrict,
+                    announce: chat.groupMetadata?.announce
+                } : null
+            }));
 
-            this.contacts = contacts;
-            return contacts;
+            // Filter groups if needed
+            if (!includeGroups) {
+                this.contacts = contacts.filter(c => !c.isGroup);
+            } else {
+                this.contacts = contacts;
+            }
+
+            return this.contacts;
         } catch (err) {
             throw new Error("Failed to get contacts: " + err.message);
         }
@@ -733,9 +760,11 @@ app.post("/api/user/send", upload.single("file"), validateUserSession, async (re
 
 app.get("/api/user/contacts", validateUserSession, async (req, res) => {
     const session = req.userSession;
+    const { includeGroups = "true" } = req.query; // New query parameter
 
     try {
-        const contacts = await session.getContacts();
+        const includeGroupsBool = includeGroups === "true";
+        const contacts = await session.getContacts(includeGroupsBool);
         res.json({ success: true, contacts });
     } catch (err) {
         res.status(500).json({ error: err.message });

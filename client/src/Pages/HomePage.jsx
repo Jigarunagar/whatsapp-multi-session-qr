@@ -67,13 +67,15 @@ function HomePage() {
         status={status}
         qrMap={qrMap}
         qrLoadingUser={qrLoadingUser}
-        contacts={filteredContacts}
+        contacts={contacts} // अब groups भी include हैं
         selectedChat={selectedChat}
         setSelectedChat={setSelectedChat}
         setNumber={setNumber}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         logoutUser={logoutUser}
+        fetchQr={fetchQr}
+        showGroups={true} // Groups दिखाएं
       />
 
       <ChatArea

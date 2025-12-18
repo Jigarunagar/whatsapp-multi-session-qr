@@ -15,7 +15,7 @@ const useWhatsApp = (activeUser) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [userNames, setUserNames] = useState({});
   const [lastConnectionTime, setLastConnectionTime] = useState(null);
-  
+
   const messagesEndRef = useRef(null);
   const eventSourceRef = useRef(null);
   const cleanupTimeoutRef = useRef(null);
@@ -26,25 +26,25 @@ const useWhatsApp = (activeUser) => {
   // Cleanup function for user data - UPDATED
   const cleanupUserData = (userId) => {
     if (!userId) return;
-    
+
     console.log(`🧹 Cleaning up localStorage for user: ${userId}`);
-    
+
     // Get all localStorage keys
     const allKeys = Object.keys(localStorage);
-    
+
     // Remove all user-specific keys
     allKeys.forEach(key => {
-      if (key.includes(userId) || 
-          key.startsWith(`wa_chatHistory_${userId}`) ||
-          key.startsWith(`wa_contacts_${userId}`) ||
-          key.startsWith(`wa_selectedChat_${userId}`) ||
-          key.startsWith(`wa_qr_${userId}`) ||
-          key === `wa_qr_${userId}`) {
+      if (key.includes(userId) ||
+        key.startsWith(`wa_chatHistory_${userId}`) ||
+        key.startsWith(`wa_contacts_${userId}`) ||
+        key.startsWith(`wa_selectedChat_${userId}`) ||
+        key.startsWith(`wa_qr_${userId}`) ||
+        key === `wa_qr_${userId}`) {
         localStorage.removeItem(key);
         console.log(`Removed: ${key}`);
       }
     });
-    
+
     // Also remove from general user names
     try {
       const userNamesStr = localStorage.getItem("wa_user_names");
@@ -52,7 +52,7 @@ const useWhatsApp = (activeUser) => {
         const userNamesObj = JSON.parse(userNamesStr);
         delete userNamesObj[userId];
         localStorage.setItem("wa_user_names", JSON.stringify(userNamesObj));
-        
+
         // Update state
         setUserNames(prev => {
           const updated = { ...prev };
@@ -63,7 +63,7 @@ const useWhatsApp = (activeUser) => {
     } catch (error) {
       console.log("Error updating user names:", error);
     }
-    
+
     // Clear any pending timeouts
     if (cleanupTimeoutRef.current) {
       clearTimeout(cleanupTimeoutRef.current);
@@ -84,7 +84,7 @@ const useWhatsApp = (activeUser) => {
   // Load user data from localStorage
   const loadUserData = (userId) => {
     if (!userId) return;
-    
+
     try {
       // Load chat history
       const chatHistoryKey = `wa_chatHistory_${userId}`;
@@ -130,7 +130,7 @@ const useWhatsApp = (activeUser) => {
   // Save user data to localStorage
   const saveUserData = (userId, dataType, data) => {
     if (!userId) return;
-    
+
     try {
       const key = `wa_${dataType}_${userId}`;
       localStorage.setItem(key, JSON.stringify(data));
@@ -153,7 +153,7 @@ const useWhatsApp = (activeUser) => {
 
     // Reset state for new user
     resetUserState();
-    
+
     // Load data for this user
     loadUserData(activeUser.userId);
 
@@ -185,53 +185,53 @@ const useWhatsApp = (activeUser) => {
       try {
         const data = JSON.parse(e.data);
         console.log(`SSE Event for ${activeUser.userId}:`, data.type);
-        
+
         // Handle phone logged out event
         if (data.type === "phone-logged-out") {
           console.log(`📱 Phone logged out for user: ${activeUser.userId}`);
-          
+
           // Show notification
           toast.error(`WhatsApp logged out on phone for ${activeUser.userName || activeUser.userId}`);
-          
+
           // Clean up localStorage data
           cleanupUserData(activeUser.userId);
-          
+
           // Reset state
           resetUserState();
-          
+
           // Update status
           setStatus("Disconnected");
-          
+
           // Remove QR from state
           setQrMap(prev => {
             const copy = { ...prev };
             delete copy[activeUser.userId];
             return copy;
           });
-          
+
           // Remove QR from localStorage
           localStorage.removeItem(qrKey);
-          
+
           // Fetch new QR (only if still the active user)
           setTimeout(() => {
             if (currentUserIdRef.current !== activeUser.userId) return;
             setQrLoadingUser(activeUser.userId);
             fetchQr();
           }, 1000);
-          
+
           return;
         }
-        
+
         // Handle disconnection event
         if (data.type === "disconnected") {
           console.log(`User ${activeUser.userId} disconnected`);
           setStatus("Disconnected");
-          
+
           // Set a timeout to clean up if still disconnected after 10 seconds
           if (cleanupTimeoutRef.current) {
             clearTimeout(cleanupTimeoutRef.current);
           }
-          
+
           cleanupTimeoutRef.current = setTimeout(() => {
             if (statusRef.current === "Disconnected" && !(qrMapRef.current && qrMapRef.current[activeUser.userId])) {
               console.log(`Auto-cleaning up disconnected user: ${activeUser.userId}`);
@@ -239,17 +239,17 @@ const useWhatsApp = (activeUser) => {
               resetUserState();
             }
           }, 10000);
-          
+
           return;
         }
 
         if (data.type === "max-reconnect") {
           console.log(`Max reconnection attempts for user: ${activeUser.userId}`);
-          
+
           // Clean up data
           cleanupUserData(activeUser.userId);
           resetUserState();
-          
+
           setStatus("Disconnected");
           toast.error("Session expired. Please create a new session.");
           return;
@@ -257,7 +257,7 @@ const useWhatsApp = (activeUser) => {
 
         if (data.type === "qr-update") {
           console.log(`New QR for user: ${activeUser.userId}`);
-          
+
           // Save QR to localStorage
           if (data.qr) {
             localStorage.setItem(qrKey, data.qr);
@@ -266,7 +266,7 @@ const useWhatsApp = (activeUser) => {
               [activeUser.userId]: data.qr
             }));
           }
-          
+
           setQrLoadingUser(null);
           setStatus("Disconnected");
           return;
@@ -275,13 +275,13 @@ const useWhatsApp = (activeUser) => {
         // Connected event
         if (data.type === "connected") {
           console.log(`User ${activeUser.userId} connected`);
-          
+
           // Clear any pending cleanup
           if (cleanupTimeoutRef.current) {
             clearTimeout(cleanupTimeoutRef.current);
             cleanupTimeoutRef.current = null;
           }
-          
+
           // Remove QR
           localStorage.removeItem(qrKey);
           setQrMap(prev => {
@@ -289,11 +289,11 @@ const useWhatsApp = (activeUser) => {
             delete copy[activeUser.userId];
             return copy;
           });
-          
+
           // Update status and timestamp
           setStatus("Connected");
           setLastConnectionTime(new Date().toISOString());
-          
+
           // Load contacts
           loadContacts();
           return;
@@ -303,7 +303,7 @@ const useWhatsApp = (activeUser) => {
           if (data.status === "connected") {
             setStatus("Connected");
             setLastConnectionTime(new Date().toISOString());
-            
+
             // Remove QR
             localStorage.removeItem(qrKey);
             setQrMap(prev => {
@@ -311,7 +311,7 @@ const useWhatsApp = (activeUser) => {
               delete copy[activeUser.userId];
               return copy;
             });
-            
+
             loadContacts();
           } else if (data.status === "disconnected" && data.qrCode) {
             setQrMap(prev => ({
@@ -322,7 +322,7 @@ const useWhatsApp = (activeUser) => {
           }
           return;
         }
-        
+
         if (data.type === "user-info") {
           const updatedName = data.name;
           setUserNames(prev => {
@@ -330,20 +330,20 @@ const useWhatsApp = (activeUser) => {
               ...prev,
               [activeUser.userId]: updatedName
             };
-            
+
             // Save to localStorage
             try {
               localStorage.setItem("wa_user_names", JSON.stringify(updated));
             } catch (error) {
               console.log("Error saving user names:", error);
             }
-            
+
             return updated;
           });
         } else if (data.type === "incoming") {
           saveIncomingMessage(data);
         }
-        
+
         // Handle ping events
         if (data.type === "ping") {
           // Connection is alive
@@ -357,7 +357,7 @@ const useWhatsApp = (activeUser) => {
     events.onerror = (error) => {
       console.log("SSE connection error:", error);
       events.close();
-      
+
       // If connection fails, mark as disconnected
       setStatus("Disconnected");
     };
@@ -391,15 +391,15 @@ const useWhatsApp = (activeUser) => {
   // Effect to monitor connection status
   useEffect(() => {
     if (!activeUser) return;
-    
+
     // If status changes to Disconnected and we have data, schedule cleanup
     if (status === "Disconnected" && contacts.length > 0) {
       console.log(`Scheduling cleanup check for ${activeUser.userId}`);
-      
+
       if (cleanupTimeoutRef.current) {
         clearTimeout(cleanupTimeoutRef.current);
       }
-      
+
       // Wait 15 seconds before cleaning up (in case it's temporary)
       cleanupTimeoutRef.current = setTimeout(() => {
         // Only clean up if still disconnected and no QR (use refs to avoid stale closure)
@@ -410,7 +410,7 @@ const useWhatsApp = (activeUser) => {
         }
       }, 15000);
     }
-    
+
     return () => {
       if (cleanupTimeoutRef.current) {
         clearTimeout(cleanupTimeoutRef.current);
@@ -448,6 +448,22 @@ const useWhatsApp = (activeUser) => {
       toast.error("QR fetch error: " + error.message);
     } finally {
       setQrLoadingUser(null);
+    }
+  };
+
+  // useWhatsApp.js में
+  const fetchContacts = async () => {
+    if (!activeUser?.userId) return;
+
+    try {
+      const response = await axios.get(
+        `/api/user/contacts?userId=${activeUser.userId}&includeGroups=true`
+      );
+      if (response.data.success) {
+        setContacts(response.data.contacts);
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
     }
   };
 
@@ -548,11 +564,11 @@ const useWhatsApp = (activeUser) => {
       });
 
       setStatus("Disconnected");
-      
+
       // Clean up data
       cleanupUserData(activeUser.userId);
       resetUserState();
-      
+
       toast.success("Logged out successfully.");
     } catch (error) {
       toast.error("Failed to logout: " + error.message);
