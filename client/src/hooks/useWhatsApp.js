@@ -23,6 +23,18 @@ const useWhatsApp = (activeUser) => {
   const statusRef = useRef(status);
   const qrMapRef = useRef(qrMap);
 
+
+  useEffect(() => {
+    try {
+      const storedNames = localStorage.getItem("wa_user_names");
+      if (storedNames) {
+        setUserNames(JSON.parse(storedNames));
+      }
+    } catch (err) {
+      console.log("Failed to load user names", err);
+    }
+  }, []);
+
   // Cleanup function for user data - UPDATED
   const cleanupUserData = (userId) => {
     if (!userId) return;
