@@ -159,7 +159,7 @@ const useWhatsApp = (activeUser) => {
 
     // Create new EventSource connection
     const events = new EventSource(
-      `http://localhost:3000/api/user/status?userId=${activeUser.userId}`
+      `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/status?userId=${activeUser.userId}`
     );
     eventSourceRef.current = events;
 
@@ -429,7 +429,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       const res = await axios.get(
-        `http://localhost:3000/api/user/qr?userId=${activeUser.userId}`
+        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/qr?userId=${activeUser.userId}`
       );
 
       const parser = new DOMParser();
@@ -471,7 +471,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      const response = await axios.get(`http://localhost:3000/api/user/contacts`, {
+      const response = await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/contacts`, {
         headers: { "x-user-id": activeUser.userId }
       });
 
@@ -504,7 +504,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       await axios.post(
-        `http://localhost:3000/api/user/send`,
+        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/send`,
         formData,
         {
           headers: {
@@ -561,7 +561,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      await axios.get(`http://localhost:3000/api/user/logout`, {
+      await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/logout`, {
         headers: { "x-user-id": activeUser.userId }
       });
 

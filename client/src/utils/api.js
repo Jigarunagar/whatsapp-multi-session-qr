@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://localhost:3000/api";
+const API = "https://whatsapp-multi-session-qr-production.up.railway.app/api";
 
 export const api = {
   createUser: (userName) =>
