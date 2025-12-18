@@ -950,3 +950,17 @@ body {
     padding: 30px 20px;
   }
 }
+
+.no-contacts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 15px;
+  text-align: center;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px;
+  flex-direction: column;
+  gap: 10px;
+}
