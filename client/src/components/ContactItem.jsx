@@ -12,6 +12,10 @@ const ContactItem = ({ contact, isSelected, onClick }) => {
     if (contact.isGroup) {
       return `${contact.participants?.length || 0} members`;
     }
+    // New line: Show total messages if the data exists
+    if (contact.totalMessages !== undefined) {
+      return `${contact.totalMessages} messages total`;
+    }
     return contact.number.replace("@c.us", "").replace("@g.us", "");
   };
 

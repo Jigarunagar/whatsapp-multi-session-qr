@@ -433,9 +433,17 @@ body {
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 10px 30px rgba(0, 168, 132, 0.3); }
-  50% { box-shadow: 0 15px 40px rgba(0, 168, 132, 0.6); }
-  100% { box-shadow: 0 10px 30px rgba(0, 168, 132, 0.3); }
+  0% {
+    box-shadow: 0 10px 30px rgba(0, 168, 132, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 15px 40px rgba(0, 168, 132, 0.6);
+  }
+
+  100% {
+    box-shadow: 0 10px 30px rgba(0, 168, 132, 0.3);
+  }
 }
 
 
@@ -617,8 +625,15 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-bubble.incoming {
@@ -809,8 +824,15 @@ body {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-content h3 {
@@ -902,7 +924,7 @@ body {
   .wa-users-sidebar {
     width: 240px;
   }
-  
+
   .wa-sidebar {
     width: 280px;
   }
@@ -912,11 +934,11 @@ body {
   .wa-users-sidebar {
     width: 200px;
   }
-  
+
   .wa-sidebar {
     width: 250px;
   }
-  
+
   .chat-bubble {
     max-width: 80%;
   }
@@ -926,24 +948,24 @@ body {
   .wa-main {
     flex-direction: column;
   }
-  
+
   .wa-users-sidebar,
   .wa-sidebar {
     width: 100%;
     height: auto;
     max-height: 40vh;
   }
-  
+
   .wa-sidebar {
     order: 2;
     border-top: 1px solid #2a3942;
   }
-  
+
   .wa-chat-area {
     order: 3;
     flex: 1;
   }
-  
+
   .modal-content {
     width: 95%;
     margin: 10px;
@@ -963,4 +985,85 @@ body {
   margin: 20px;
   flex-direction: column;
   gap: 10px;
+}
+
+
+/* Total messages counter - right aligned */
+.total-messages-counter {
+  background: #005c4b;
+  color: #d1f7c4;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+  min-width: 24px;
+  text-align: center;
+  white-space: nowrap;
+  order: 3;
+  /* Ensures it appears at the end */
+}
+
+/* Adjust the contact-info-row to properly space elements */
+.contact-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* Add consistent spacing between elements */
+  width: 100%;
+}
+
+/* Make contact-info take available space */
+.contact-info {
+  color: #8696a0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  /* Take available space */
+  min-width: 0;
+  /* Allow text truncation */
+}
+
+/* Unread badge positioning */
+.unread-badge {
+  background: #00a884;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+  order: 2;
+  /* Comes before total counter */
+}
+
+/* For group items - adjust member count display */
+.group-item .contact-info {
+  color: #00a884;
+  font-weight: 500;
+}
+
+/* When both unread and total messages exist */
+.contact-info-row.has-both {
+  justify-content: flex-start;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .total-messages-counter {
+    font-size: 11px;
+    padding: 1px 6px;
+    min-width: 20px;
+  }
+
+  .unread-badge {
+    font-size: 11px;
+    padding: 1px 6px;
+    min-width: 20px;
+  }
 }
