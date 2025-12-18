@@ -53,11 +53,11 @@ const WhatsAppSidebar = ({
     // Pinned chats first
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
-    
+
     // Then by unread count
     if (a.unreadCount > b.unreadCount) return -1;
     if (a.unreadCount < b.unreadCount) return 1;
-    
+
     // Then by latest message timestamp
     return b.timestamp - a.timestamp;
   });
@@ -134,8 +134,8 @@ const WhatsAppSidebar = ({
                   onClick={() => {
                     setSelectedChat(contact);
                     // Use proper WhatsApp ID format
-                    const whatsappId = contact.isGroup 
-                      ? `${contact.number}@g.us` 
+                    const whatsappId = contact.isGroup
+                      ? `${contact.number}@g.us`
                       : `${contact.number}@c.us`;
                     setNumber(whatsappId);
                     localStorage.setItem(
@@ -150,7 +150,7 @@ const WhatsAppSidebar = ({
               ))
             ) : (
               <div className="no-contacts">
-                {searchTerm ? "No matching chats found" : "No chats available"}
+                {searchTerm ? "No matching chats found" : "Contacts list loading..."}
               </div>
             )}
           </div>

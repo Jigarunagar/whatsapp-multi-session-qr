@@ -159,7 +159,7 @@ const useWhatsApp = (activeUser) => {
 
     // Create new EventSource connection
     const events = new EventSource(
-      `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/status?userId=${activeUser.userId}`
+      `http://localhost:3000/api/user/status?userId=${activeUser.userId}`
     );
     eventSourceRef.current = events;
 
@@ -429,7 +429,7 @@ const useWhatsApp = (activeUser) => {
 
     try {
       const res = await axios.get(
-        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/qr?userId=${activeUser.userId}`
+        `http://localhost:3000/api/user/qr?userId=${activeUser.userId}`
       );
 
       const parser = new DOMParser();
@@ -471,7 +471,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      const response = await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/contacts`, {
+      const response = await axios.get(`http://localhost:3000/api/user/contacts`, {
         headers: { "x-user-id": activeUser.userId }
       });
 
@@ -496,13 +496,15 @@ const useWhatsApp = (activeUser) => {
     }
 
     const formData = new FormData();
+
+    // Send the number exactly as it is (with @g.us or @c.us suffix)
     formData.append("number", number);
     formData.append("message", message);
     if (file) formData.append("file", file);
 
     try {
       await axios.post(
-        `https://whatsapp-multi-session-qr-production.up.railway.app/api/user/send`,
+        `http://localhost:3000/api/user/send`,
         formData,
         {
           headers: {
@@ -512,7 +514,7 @@ const useWhatsApp = (activeUser) => {
         }
       );
 
-      const cleanNumber = number.replace("@c.us", "").replace("@s.whatsapp.net", "");
+      const cleanNumber = number.replace("@c.us", "").replace("@g.us", "").replace("@s.whatsapp.net", "");
 
       const newEntry = {
         type: "outgoing",
@@ -559,7 +561,7 @@ const useWhatsApp = (activeUser) => {
     if (!activeUser) return;
 
     try {
-      await axios.get(`https://whatsapp-multi-session-qr-production.up.railway.app/api/user/logout`, {
+      await axios.get(`http://localhost:3000/api/user/logout`, {
         headers: { "x-user-id": activeUser.userId }
       });
 

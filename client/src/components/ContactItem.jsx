@@ -12,12 +12,12 @@ const ContactItem = ({ contact, isSelected, onClick }) => {
     if (contact.isGroup) {
       return `${contact.participants?.length || 0} members`;
     }
-    return contact.number;
+    return contact.number.replace("@c.us", "").replace("@g.us", "");
   };
 
   return (
-    <div 
-      className={`contact-item ${contact.isGroup ? 'group-item' : ''} ${isSelected ? 'active' : ''}`} 
+    <div
+      className={`contact-item ${contact.isGroup ? 'group-item' : ''} ${isSelected ? 'active' : ''}`}
       onClick={onClick}
     >
       <div className="contact-avatar">

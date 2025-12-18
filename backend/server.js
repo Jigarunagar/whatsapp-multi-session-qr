@@ -429,41 +429,57 @@ class UserSession {
     }
 
     async sendMessage(number, message, filePath = null, quotedId = null) {
-        if (!this.isReady) {
-            throw new Error("WhatsApp not connected!");
-        }
-
-        const finalNumber = number.includes("@c.us") ? number : number + "@c.us";
-
-        try {
-            let msgObj;
-
-            if (filePath) {
-                const media = MessageMedia.fromFilePath(filePath);
-                msgObj = await this.client.sendMessage(finalNumber, media, { caption: message });
-            } else {
-                if (quotedId) {
-                    const quotedMsg = await this.client.getMessageById(quotedId);
-                    msgObj = await quotedMsg.reply(message);
-                } else {
-                    msgObj = await this.client.sendMessage(finalNumber, message);
-                }
-            }
-
-            this.sendStatus(JSON.stringify({
-                type: "outgoing",
-                to: finalNumber,
-                body: message,
-                media: !!filePath,
-                id: msgObj.id._serialized,
-                timestamp: new Date().toISOString()
-            }));
-
-            return { success: true, messageId: msgObj.id._serialized };
-        } catch (err) {
-            throw new Error("Failed to send message: " + err.message);
-        }
+    if (!this.isReady) {
+        throw new Error("WhatsApp not connected!");
     }
+
+    try {
+        // Determine the correct suffix based on number format
+        let finalNumber;
+        if (number.includes("@g.us")) {
+            // Already a group ID
+            finalNumber = number;
+        } else if (number.includes("@c.us")) {
+            // Already a contact ID
+            finalNumber = number;
+        } else {
+            // Check if it's a group by looking at contacts
+            const isGroup = this.contacts.some(contact => 
+                contact.number === number && contact.isGroup
+            );
+            // Use appropriate suffix
+            finalNumber = isGroup ? `${number}@g.us` : `${number}@c.us`;
+        }
+
+        let msgObj;
+
+        if (filePath) {
+            const media = MessageMedia.fromFilePath(filePath);
+            msgObj = await this.client.sendMessage(finalNumber, media, { caption: message });
+        } else {
+            if (quotedId) {
+                const quotedMsg = await this.client.getMessageById(quotedId);
+                msgObj = await quotedMsg.reply(message);
+            } else {
+                msgObj = await this.client.sendMessage(finalNumber, message);
+            }
+        }
+
+        this.sendStatus(JSON.stringify({
+            type: "outgoing",
+            to: finalNumber,
+            body: message,
+            media: !!filePath,
+            id: msgObj.id._serialized,
+            timestamp: new Date().toISOString()
+        }));
+
+        return { success: true, messageId: msgObj.id._serialized };
+    } catch (err) {
+        console.error("Send message error:", err);
+        throw new Error("Failed to send message: " + err.message);
+    }
+}
 
     async getContacts(includeGroups = true) {
         if (!this.isReady) {
